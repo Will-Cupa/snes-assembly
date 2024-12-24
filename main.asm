@@ -5,10 +5,10 @@
 .include "interruptVector.asm" ONCE
 
 sprite :
-.INCBIN "debug.bin"
+.incbin "debug.bin"
 
 palette :
-.INCBIN "debug.pal"
+.incbin "debug.pal"
 
 .EQU z_HL   $20 ;define variables with adresses
 .EQU z_L    $20
