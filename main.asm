@@ -4,10 +4,11 @@
 .include "header.asm" ONCE
 .include "interruptVector.asm" ONCE
 
-;resources
-.include "font.asm" ONCE
+sprite :
+.INCBIN "debug.bin"
 
-
+palette :
+.INCBIN "debug.pal"
 
 .EQU z_HL   $20 ;define variables with adresses
 .EQU z_L    $20

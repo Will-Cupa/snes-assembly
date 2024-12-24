@@ -1,2 +1,5 @@
 main.o
 main.sfc
+debug.bin
+debug.pal
+debug.ppm
