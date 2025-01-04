@@ -10,23 +10,124 @@ sprite :
 palette :
 .incbin "debug.pal"
 
-.EQU z_HL   $20 ;define variables with adresses
-.EQU z_L    $20
-.EQU z_H    $21
-.EQU z_HLU  $22
+; these are aliases for the Memory Mapped Registers we will use
+INIDISP     = $2100     ; inital settings for screen
+OBJSEL      = $2101     ; object size $ object data area designation
+MSD         = $212c     ; main screen designation
+NMITIMEN    = $4200     ; enable flaog for v-blank
+RDNMI       = $4210     ; read the NMI flag status
 
-.EQU CursorX $40
-.EQU CursorY $41
+; address for accessing OAM
+OAMADDL     = $2102     ; low byte (8 bits Register)
+OAMADDH     = $2103     ; high byte (8 bits Register)
+OAMDATA     = $2104     ; data for OAM write
+
+VMAINC      = $2115     ; VRAM address increment value designation
+
+; address for VRAM read and write
+VMADDL      = $2116     ; low byte (8 bits Register)
+VMADDH      = $2117     ; high byte (8 bits Register)
+
+; data for VRAM write
+VMDATAL     = $2118     ; low byte (8 bits Register)
+VMDATAH     = $2119     ; high byte (8 bits Register)
+
+CGADD       = $2121     ; address for CGRAM read and write
+CGDATA      = $2122     ; data for CGRAM write
+
+SCREENH = 224
+SCREENW = 256
 
 .BANK 0 SLOT 0
 
-EmptyHandler    ; Needed to satisfy interrupt definition in "interruptVector.asm"
+EmptyHandler :    ; Needed to satisfy interrupt definition in "interruptVector.asm"
     RTI
 
-VBlank:         ; Needed to satisfy interrupt definition in "interruptVector.asm"
+VBlank :         ; Needed to satisfy interrupt definition in "interruptVector.asm"
     RTI
 
-prog:
-    RTS
+prog :
+    SEI                     ; disable interrupt
+    CLC                     ; clear carry flag
+    XCE                     ; switch the 65816 to native (16-bit mode)
+
+    LDA #$8f                ; force v-blanking (draw nothing)
+    STA INIDISP             ; set initial display settings to v-blank
+    STZ NMITIMEN            ; stop NMI interrupt
+
+    ;send sprite to VRAM
+    STZ VMADDL              ; set the VRAM address to $0000
+    STZ VMADDH
+
+    LDX #$00                ; set register X to zero, we will use X as a loop counter and offset
+
+    VRAMLoop:
+        LDA sprite, X       ; get bitplane 0/2 byte from the sprite data
+        STA VMDATAL             ; write the byte in A to low byte VRAM
+        INX                     ; increment counter/offset
+        LDA sprite, X       ; get bitplane 1/3 byte from the sprite data
+        STA VMDATAH             ; write the byte in A to high byte VRAM
+        INX                     ; increment counter/offset
+        CPX #32                 ; check whether we have written 32 bytes to VRAM (one sprite)
+        BCC VRAMLoop            ; if X is smaller than 32, continue the loop
+
+    ; transfer CGRAM data
+    LDA #128
+    STA CGADD               ; set CGRAM address to 128 (second half of its registers)
+    LDX #$00                ; set X to zero, use it as loop counter and offset
+    
+    CGRAMLoop:
+        LDA palette, X        ; get the color low byte
+        STA CGDATA              ; store it in CGRAM
+        INX                     ; increase counter/offset
+        LDA ColorData, X        ; get the color high byte
+        STA CGDATA              ; store it in CGRAM
+        INX                     ; increase counter/offset
+        CPX #32                ; check whether 32 bytes were transfered (size of the palette)
+        BCC CGRAMLoop           ; if not, continue loop
+    
+    ; set up OAM data              
+    stz OAMADDL             ; set the OAM address ...
+    stz OAMADDH             ; ...at $0000
+
+    ; OAM data for first sprite (OAM address is auto-incremented by PPU)
+    lda # (SCREENW/2 - 8)       ; horizontal position of first sprite
+    sta OAMDATA
+    lda # (SCREENH/2 - 8)       ; vertical position of first sprite
+    sta OAMDATA
+    lda #$00                    ; name of first sprite
+    sta OAMDATA
+    lda #$00                    ; no flip, prio 0, palette 0
+    sta OAMDATA
+
+    ; make Objects visible
+    lda #$10
+    sta MSD
+
+    ; release forced blanking, set screen to full brightness
+    lda #$0f
+    sta INIDISP
+    ; enable NMI, turn on automatic joypad polling
+    lda #$81
+    sta NMITIMEN
+
+    jmp GameLoop            ; all initialization is done
+    RTS         ; Termination
+
+
+GameLoop:
+        wai                     ; wait for NMI / V-Blank
+
+        ; here we would place all of the game logic
+        ; and loop forever
+
+        jmp GameLoop
+
+NMIHandler:
+        lda RDNMI               ; read NMI status, acknowledge NMI
+
+        ; this is where we would do graphics update
+
+        rti
 
 .include "footer.asm" ONCE
