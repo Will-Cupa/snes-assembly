@@ -5,10 +5,10 @@
 .include "interruptVector.asm" ONCE
 
 sprite :
-.incbin "debug.bin"
+.incbin "Sprites.vra"
 
 palette :
-.incbin "debug.pal"
+.incbin "SpriteColors.pal"
 
 ; these are aliases for the Memory Mapped Registers we will use
 INIDISP     = $2100     ; inital settings for screen
@@ -62,10 +62,11 @@ prog :
     LDX #$00                ; set register X to zero, we will use X as a loop counter and offset
 
     VRAMLoop:
-        LDA sprite, X       ; get bitplane 0/2 byte from the sprite data
+
+        LDA sprite.w, X       ; get bitplane 0/2 byte from the sprite data (.w because its address use 16bits (word))
         STA VMDATAL             ; write the byte in A to low byte VRAM
-        INX                     ; increment counter/offset
-        LDA sprite, X       ; get bitplane 1/3 byte from the sprite data
+        INX                   ; increment counter/offset
+        LDA sprite.w, X       ; get bitplane 1/3 byte from the sprite data
         STA VMDATAH             ; write the byte in A to high byte VRAM
         INX                     ; increment counter/offset
         CPX #32                 ; check whether we have written 32 bytes to VRAM (one sprite)
@@ -77,10 +78,10 @@ prog :
     LDX #$00                ; set X to zero, use it as loop counter and offset
     
     CGRAMLoop:
-        LDA palette, X        ; get the color low byte
+        LDA palette.w, X        ; get the color low byte
         STA CGDATA              ; store it in CGRAM
         INX                     ; increase counter/offset
-        LDA ColorData, X        ; get the color high byte
+        LDA palette.w, X        ; get the color high byte
         STA CGDATA              ; store it in CGRAM
         INX                     ; increase counter/offset
         CPX #32                ; check whether 32 bytes were transfered (size of the palette)
