@@ -69,7 +69,7 @@ prog :
         LDA sprite.w, X       ; get bitplane 1/3 byte from the sprite data
         STA VMDATAH             ; write the byte in A to high byte VRAM
         INX                     ; increment counter/offset
-        CPX #32                 ; check whether we have written 32 bytes to VRAM (one sprite)
+        CPX #128                 ; check whether we have written 32 bytes to VRAM (one sprite)
         BCC VRAMLoop            ; if X is smaller than 32, continue the loop
 
     ; transfer CGRAM data
@@ -99,6 +99,33 @@ prog :
     lda #$00                    ; name of first sprite
     sta OAMDATA
     lda #$00                    ; no flip, prio 0, palette 0
+    sta OAMDATA
+    ; OAM data for second sprite
+    lda # (SCREENW/2)           ; horizontal position of second sprite
+    sta OAMDATA
+    lda # (SCREENH/2 - 8)       ; vertical position of second sprite
+    sta OAMDATA
+    lda #$01                ; name of second sprite
+    sta OAMDATA
+    lda #$00                ; no flip, prio 0, palette 0
+    sta OAMDATA
+    ; OAM data for third sprite
+    lda # (SCREENW/2 - 8)       ; horizontal position of third sprite
+    sta OAMDATA
+    lda # (SCREENH/2)           ; vertical position of third sprite
+    sta OAMDATA
+    lda #$02                ; name of third sprite
+    sta OAMDATA
+    lda #$00                ; no flip, prio 0, palette 0
+    sta OAMDATA
+    ; OAM data for fourth sprite
+    lda # (SCREENW/2)           ; horizontal position of fourth sprite
+    sta OAMDATA
+    lda # (SCREENH/2)           ; vertical position of fourth sprite
+    sta OAMDATA
+    lda #$03                ; name of fourth sprite
+    sta OAMDATA
+    lda #$00                ; no flip, prio 0, palette 0
     sta OAMDATA
 
     ; make Objects visible
