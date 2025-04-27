@@ -20,6 +20,7 @@ RDNMI       = $4210     ; read the NMI flag status
 ; address for accessing OAM
 OAMADDL     = $2102     ; low byte (8 bits Register)
 OAMADDH     = $2103     ; high byte (8 bits Register)
+
 OAMDATA     = $2104     ; data for OAM write
 
 VMAINC      = $2115     ; VRAM address increment value designation
@@ -55,8 +56,16 @@ prog :
     STA INIDISP             ; set initial display settings to v-blank
     STZ NMITIMEN            ; stop NMI interrupt
 
+    lda #%00000001   ; Mode 1, 8x8 tiles
+    sta $2105
+    
+    lda #%00010000     ; Only OBJ layer on
+    sta $212c          ; Main screen designation
+    sta $212d          ; Sub screen designation
+
+
     ;send sprite to VRAM
-    STZ VMADDL              ; set the VRAM address to $0000
+    STZ VMADDL              ; set the VRAM address to $0000 bc it is used as an offset/counter
     STZ VMADDH
 
     LDX #$00                ; set register X to zero, we will use X as a loop counter and offset
@@ -92,36 +101,36 @@ prog :
     stz OAMADDH             ; ...at $0000
 
     ; OAM data for first sprite (OAM address is auto-incremented by PPU)
-    lda # (SCREENW/2 - 8)       ; horizontal position of first sprite
+    lda # (SCREENW/2 - 4)       ; horizontal position of first sprite
     sta OAMDATA
-    lda # (SCREENH/2 - 8)       ; vertical position of first sprite
+    lda # (SCREENH/2 - 4)       ; vertical position of first sprite
     sta OAMDATA
     lda #$00                    ; name of first sprite
     sta OAMDATA
     lda #$00                    ; no flip, prio 0, palette 0
     sta OAMDATA
     ; OAM data for second sprite
-    lda # (SCREENW/2)           ; horizontal position of second sprite
+    lda # (SCREENW/2 + 4)           ; horizontal position of second sprite
     sta OAMDATA
-    lda # (SCREENH/2 - 8)       ; vertical position of second sprite
+    lda # (SCREENH/2 - 4)       ; vertical position of second sprite
     sta OAMDATA
     lda #$01                ; name of second sprite
     sta OAMDATA
     lda #$00                ; no flip, prio 0, palette 0
     sta OAMDATA
     ; OAM data for third sprite
-    lda # (SCREENW/2 - 8)       ; horizontal position of third sprite
+    lda # (SCREENW/2 - 4)       ; horizontal position of third sprite
     sta OAMDATA
-    lda # (SCREENH/2)           ; vertical position of third sprite
+    lda # (SCREENH/2 + 4)           ; vertical position of third sprite
     sta OAMDATA
     lda #$02                ; name of third sprite
     sta OAMDATA
     lda #$00                ; no flip, prio 0, palette 0
     sta OAMDATA
     ; OAM data for fourth sprite
-    lda # (SCREENW/2)           ; horizontal position of fourth sprite
+    lda # (SCREENW/2 + 4)           ; horizontal position of fourth sprite
     sta OAMDATA
-    lda # (SCREENH/2)           ; vertical position of fourth sprite
+    lda # (SCREENH/2 + 4)           ; vertical position of fourth sprite
     sta OAMDATA
     lda #$03                ; name of fourth sprite
     sta OAMDATA
