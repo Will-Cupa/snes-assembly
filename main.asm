@@ -56,8 +56,11 @@ prog :
     STA INIDISP             ; set initial display settings to v-blank
     STZ NMITIMEN            ; stop NMI interrupt
 
-    lda #%00000001   ; Mode 1, 8x8 tiles
+    lda #%00000001     ; Mode 1, 8x8 tiles
     sta $2105
+
+    lda $81            ; Increment after accessing VRAM, increment by 1 byte
+    sta VMAINC
     
     lda #%00010000     ; Only OBJ layer on
     sta $212c          ; Main screen designation
@@ -78,9 +81,8 @@ prog :
         LDA sprite.w, X       ; get bitplane 1/3 byte from the sprite data
         STA VMDATAH             ; write the byte in A to high byte VRAM
         INX                     ; increment counter/offset
-        CPX #128                 ; check whether we have written 32 bytes to VRAM (one sprite)
-        BCC VRAMLoop            ; if X is smaller than 32, continue the loop
-
+        CPX #128                  ; check whether we have written 128 bytes to VRAM
+        BCC VRAMLoop            ; if X is smaller than 128, continue the loop
     ; transfer CGRAM data
     LDA #128
     STA CGADD               ; set CGRAM address to 128 (second half of its registers)
@@ -105,7 +107,7 @@ prog :
     sta OAMDATA
     lda # (SCREENH/2 - 4)       ; vertical position of first sprite
     sta OAMDATA
-    lda #$00                    ; name of first sprite
+    lda #$01                    ; name of first sprite
     sta OAMDATA
     lda #$00                    ; no flip, prio 0, palette 0
     sta OAMDATA
@@ -114,7 +116,7 @@ prog :
     sta OAMDATA
     lda # (SCREENH/2 - 4)       ; vertical position of second sprite
     sta OAMDATA
-    lda #$01                ; name of second sprite
+    lda #$00                ; name of second sprite
     sta OAMDATA
     lda #$00                ; no flip, prio 0, palette 0
     sta OAMDATA
