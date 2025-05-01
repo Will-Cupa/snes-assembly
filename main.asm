@@ -59,13 +59,11 @@ prog :
     lda #%00000001     ; Mode 1, 8x8 tiles
     sta $2105
 
-    lda $81            ; Increment after accessing VRAM, increment by 1 byte
+    lda #$80            ; Increment after accessing VRAM, increment by 1 byte
     sta VMAINC
-    
-    lda #%00010000     ; Only OBJ layer on
-    sta $212c          ; Main screen designation
-    sta $212d          ; Sub screen designation
 
+    lda #$00
+    sta OBJSEL
 
     ;send sprite to VRAM
     STZ VMADDL              ; set the VRAM address to $0000 bc it is used as an offset/counter
@@ -107,7 +105,7 @@ prog :
     sta OAMDATA
     lda # (SCREENH/2 - 4)       ; vertical position of first sprite
     sta OAMDATA
-    lda #$01                    ; name of first sprite
+    lda #$00                    ; name of first sprite
     sta OAMDATA
     lda #$00                    ; no flip, prio 0, palette 0
     sta OAMDATA
@@ -116,7 +114,7 @@ prog :
     sta OAMDATA
     lda # (SCREENH/2 - 4)       ; vertical position of second sprite
     sta OAMDATA
-    lda #$00                ; name of second sprite
+    lda #$01                ; name of second sprite
     sta OAMDATA
     lda #$00                ; no flip, prio 0, palette 0
     sta OAMDATA
