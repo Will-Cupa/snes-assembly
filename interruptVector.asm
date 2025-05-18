@@ -10,6 +10,6 @@
   COP EmptyHandler
   ABORT EmptyHandler
   NMI EmptyHandler
-  RESET prog                ; where execution starts
+  RESET ResetHandler                ; where execution starts
   IRQBRK EmptyHandler
 .ENDEMUVECTOR
