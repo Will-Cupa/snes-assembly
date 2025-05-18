@@ -52,9 +52,16 @@ ResetHandler :
     CLC                     ; clear carry flag
     XCE                     ; switch the 65816 to native (16-bit mode)
 
+    rep #$10                ; set X and Y to 16-bit
+    sep #$20                ; set A to 8-bit
+
     LDA #$8f                ; force v-blanking (draw nothing)
     STA INIDISP             ; set initial display settings to v-blank
     STZ NMITIMEN            ; stop NMI interrupt
+
+    ; set the stack pointer to $1fff
+    ldx #$1fff              ; load X with $1fff
+    txs                     ; copy X to stack pointer
 
     lda #%00000001          ; Mode 1, 8x8 tiles
     sta $2105
