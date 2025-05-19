@@ -122,10 +122,10 @@ LoadVRAM:
 
     VRAMLoop:
 
-        LDA sprite.w, Y       ; get bitplane 0/2 byte from the sprite data
+        LDA (SrcAddress,S), Y       ; get bitplane 0/2 byte from the sprite data
         STA VMDATAL             ; write the byte in A to low byte VRAM
         INY                   ; increment counter/offset
-        LDA sprite.w, Y       ; get bitplane 1/3 byte from the sprite data
+        LDA (SrcAddress,S), Y       ; get bitplane 1/3 byte from the sprite data
         STA VMDATAH             ; write the byte in A to high byte VRAM
         INY                     ; increment counter/offset
         CPY ByteCount           ; check whether we have written 192 bytes (= 6 sprites) to VRAM
