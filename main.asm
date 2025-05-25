@@ -8,7 +8,7 @@ sprite :
 .incbin "sprites/lulu.bin"
 
 palette :
-.incbin "sprites/Sprites.pal"
+.incbin "sprites/lulu.pal"
 
 ; these are aliases for the Memory Mapped Registers we will use
 INIDISP     = $2100     ; inital settings for screen
@@ -25,6 +25,10 @@ OAMDATA     = $2104     ; data for OAM write
 
 VMAINC      = $2115     ; VRAM address increment value designation
 
+HOR_SPEED   = $0300     ; the horizontal speed
+VER_SPEED   = $0301     ; the vertical speed
+OAMMIRROR   = $0400     ; location of OAMRAM mirror in WRAM
+
 ; address for VRAM read and write
 VMADDL      = $2116     ; low byte (8 bits Register)
 VMADDH      = $2117     ; high byte (8 bits Register)
@@ -38,6 +42,18 @@ CGDATA      = $2122     ; data for CGRAM write
 
 SCREENH = 224
 SCREENW = 256
+
+;----- Game Constants ----------------------------------------------------------
+    ; we use these constants to check for collisions with the screen boundaries
+SCREEN_LEFT     = $00   ; left screen boundary = 0
+SCREEN_RIGHT    = $ff   ; right screen boundary = 255
+SCREEN_TOP      = $00   ; top screen boundary = 0 
+SCREEN_BOTTOM   = $df   ; bottom screen boundary = 223
+    ; a simple constant to define the sprite movement speed 
+SPRITE_SPEED    = $02   ; the sprites will move 2 pixel per frame
+    ; this makes the code a bit more readable
+SPRITE_SIZE     = $08   ; sprites are 8 by 8 pixel
+OAMMIRROR_SIZE  = $0220 ; OAMRAM can hold data for 128 sprites, 4 bytes each
 
 .BANK 0 SLOT 0
 
@@ -63,24 +79,37 @@ ResetHandler :
     ldx #$1fff              ; load X with $1fff
     txs                     ; copy X to stack pointer
 
-    lda #%00000001          ; Mode 1, 8x8 tiles
-    sta $2105
-
     lda #$00                ; OAM properties
     sta OBJSEL
 
-    TSX                     ; Save stack pointer (see it as a bottlecap)
+    TSX                     ; Save stack pointer
 
     PEA $0000               ; Push VRAM address onto the stack
     PEA sprite            ; Push Sprite address onto the stack
+
+    LDA #$00        ; Needed to compare 16bit
+    PHA 
 
     LDA #192                
     PHA                     ; Push byte count for the sprites onto the stack
     JSR LoadVRAM
     TXS
 
-    JSR LoadCGRAM
+    TSX
 
+    LDA #128
+    PHA
+
+    PEA palette
+
+    LDA #$00        ; Needed to compare 16bit
+    PHA
+
+    LDA #32
+    PHA
+    JSR LoadCGRAM
+    TXS
+    
     JSR SetOAM
 
 
@@ -108,8 +137,8 @@ LoadVRAM:
     TCD                     ; ...Direct Register.
 
     ByteCount   = $07       ; number of bytes to transfer (go across 1 (pointer)+ 2 (old stack address 16bits)+ 2 (jump back address 16bits))
-    SrcAddress  = $08       ; source address of sprite data (same + 1 (byte number 8bit))
-    DestAddress = $0a       ; destination address in VRAM (same + 2 (src address 16bit))
+    SrcAddress  = $09       ; source address of sprite data (same + 2 (byte number 16bit))
+    DestAddress = $0b       ; destination address in VRAM (same + 2 (src address 16bit))
 
     ; set destination address in VRAM, and address increment after writing to VRAM
     LDX DestAddress         ; load the destination pointer...
@@ -138,19 +167,35 @@ LoadVRAM:
     RTS
     
 LoadCGRAM:
-    LDA #128
+    ;send sprite to VRAM
+    PHX             ; save stack address before
+    ; create frame pointer
+    PHD                     ; push Direct Register to stack
+    TSC                     ; transfer Stack to... (via Accumulator)
+    TCD                     ; ...Direct Register.
+
+    CGRAM_ByteCount   = $07       ; number of bytes to transfer (go across 1 (pointer)+ 2 (old stack address 16bits)+ 2 (jump back address 16bits))
+    CGRAM_SrcAddress  = $09       ; source address of sprite data (same + 2 (byte number 16bit))
+    CGRAM_DestAddress = $0b       ; destination address in VRAM (same + 2 (src address 16bit))
+
+    
+    LDA CGRAM_DestAddress         ; load the destination pointer...
     STA CGADD               ; set CGRAM address to 128 (second half of its registers)
-    LDX #$00                ; set X to zero, use it as loop counter and offset
+    
+    LDY #$0000                ; set X to zero, use it as loop counter and offset
     
     CGRAMLoop:
-        LDA palette.w, X        ; get the color low byte
-        STA CGDATA              ; store it in CGRAM
-        INX                     ; increase counter/offset
-        LDA palette.w, X        ; get the color high byte
-        STA CGDATA              ; store it in CGRAM
-        INX                     ; increase counter/offset
-        CPX #32                 ; check whether 32 bytes were transfered (size of the palette)
-        BCC CGRAMLoop           ; if not, continue loop
+        LDA (CGRAM_SrcAddress, S), Y        ; get the color low byte
+        STA CGDATA                         ; store it in CGRAM
+        INY                                ; increase counter/offset
+        LDA (CGRAM_SrcAddress, S), Y        ; get the color high byte
+        STA CGDATA                         ; store it in CGRAM
+        INY                                ; increase counter/offset
+        CPY CGRAM_ByteCount               ; check whether 32 bytes were transfered (size of the palette)
+        BCC CGRAMLoop                      ; if not, continue loop
+
+    PLD
+    PLX
 
     RTS
 
